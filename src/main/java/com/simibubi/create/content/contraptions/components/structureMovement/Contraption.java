@@ -378,6 +378,7 @@ public abstract class Contraption {
 		BlockState state) {
 		int limit = AllConfigs.SERVER.kinetics.maxPistonPoles.get();
 		Direction direction = state.get(MechanicalPistonBlock.FACING);
+		boolean sticky = AllBlocks.STICKY_MECHANICAL_PISTON.has(state);
 		if (state.get(MechanicalPistonBlock.STATE) == PistonState.EXTENDED) {
 			BlockPos searchPos = pos;
 			while (limit-- >= 0) {
@@ -385,19 +386,30 @@ public abstract class Contraption {
 				BlockState blockState = world.getBlockState(searchPos);
 				if (isExtensionPole(blockState)) {
 					if (blockState.get(PistonExtensionPoleBlock.FACING)
-						.getAxis() != direction.getAxis())
+							.getAxis() != direction.getAxis())
 						break;
 					if (!visited.contains(searchPos))
 						frontier.add(searchPos);
 					continue;
 				}
-				if (isPistonHead(blockState))
+				if (isPistonHead(blockState)) {
 					if (!visited.contains(searchPos))
 						frontier.add(searchPos);
+					if (sticky) {
+						searchPos = searchPos.offset(direction);
+						if (!visited.contains(searchPos))
+							frontier.add(searchPos);
+					}
+				}
 				break;
 			}
 			if (limit <= -1)
 				return false;
+		}
+		if (state.get(MechanicalPistonBlock.STATE) == PistonState.RETRACTED && sticky) {
+			BlockPos searchPos = pos.offset(direction);
+			if (!visited.contains(searchPos))
+				frontier.add(searchPos);
 		}
 
 		BlockPos searchPos = pos;
